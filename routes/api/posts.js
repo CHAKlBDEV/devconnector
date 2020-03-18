@@ -151,4 +151,80 @@ router.put('/unlike/:post_id', auth, async (req, res) => {
 	}
 });
 
+// @route PUT api/posts/comments/id
+// @desc Add comment to post
+// @access Private
+router.put(
+	'/comments/:post_id',
+	[auth, [check('text').notEmpty()]],
+	async (req, res) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			return res.status(400).json({ errors: errors.array() });
+		}
+		try {
+			const post = await Post.findOne({ _id: req.params.post_id });
+
+			if (!post) {
+				return res.status(404).json({ msg: 'Post not found' });
+			}
+
+			const user = await User.findOne({ _id: req.user }).select(
+				'-password'
+			);
+
+			let newComment = {
+				text: req.body.text,
+				user: req.user,
+				name: user.name,
+				avatar: user.avatar
+			};
+
+			post.comments.unshift(newComment);
+			post.save();
+
+			return res.json(post);
+		} catch (err) {
+			console.error(err);
+			return res.status(500).send('Server Error');
+		}
+	}
+);
+
+// @route PUT api/posts/comments/id
+// @desc Add comment to post
+// @access Private
+router.delete('/comments/:post_id/:comment_id', auth, async (req, res) => {
+	try {
+		const post = await Post.findOne({ _id: req.params.post_id });
+
+		if (!post) {
+			return res.status(404).json({ msg: 'Post not found' });
+		}
+
+		const comment = post.comments.find(
+			comment => comment.id === req.params.comment_id
+		);
+
+		if (!comment) {
+			return res.status(400).json({ msg: 'Comment not found' });
+		}
+
+		if (comment.user.toString() !== req.user) {
+			return res.status(401).json({ msg: 'Unauthorized' });
+		}
+
+		post.comments = post.comments.filter(
+			({ id }) => id !== req.params.comment_id
+		);
+
+		await post.save();
+
+		return res.json(post.comments);
+	} catch (err) {
+		console.error(err);
+		return res.status(500).send('Server Error');
+	}
+});
+
 module.exports = router;
