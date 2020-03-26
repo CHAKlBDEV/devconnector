@@ -4,7 +4,9 @@ import { getCurrentProfile } from './../../actions/profile';
 import PropTypes from 'prop-types';
 
 const Dashboard = ({ getCurrentProfile, auth, profile }) => {
-	useEffect(() => getCurrentProfile(), []);
+	useEffect(() => {
+		getCurrentProfile();
+	}, []);
 	return <div>Dashboard</div>;
 };
 
